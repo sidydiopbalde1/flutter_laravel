@@ -65,4 +65,17 @@ class ApiService {
   //     throw Exception('Échec du chargement des utilisateurs');
   //   }
   // }
+
+   // Méthode pour effectuer un transfert
+  // Future<Map<String, dynamic>> transferMoney(int senderId, int receiverId, double montant) async {
+  //   // Paramètres à envoyer dans le corps de la requête
+  //   final data = {
+  //     "sender_id": senderId,
+  //     "receiver_id": receiverId,
+  //     "montant": montant,
+  //   };
+
+  //   // Appel de la méthode POST avec l'endpoint 'api/transaction/transfert/simple'
+  //   return await post('api/transaction/transfert/simple', data);
+  // }
 }
