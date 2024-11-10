@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'transfert_page.dart'; // Importez votre TransferPage
+import 'transfert_page.dart';
+import 'settings_page.dart';
 
 class WaveServices extends StatefulWidget {
   @override
@@ -11,86 +12,189 @@ class WaveServices extends StatefulWidget {
 
 class _WaveServicesState extends State<WaveServices> {
   final String _qrCodeData = 'https://wavemobilemoney.com';
-
-  void _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw 'Could not launch $url';
-    }
-  }
+  final List<Transaction> _transactions = [
+    Transaction(
+      type: 'Envoi',
+      amount: -50.00,
+      recipient: 'John Doe',
+      date: DateTime.now().subtract(Duration(hours: 2)),
+    ),
+    Transaction(
+      type: 'Réception',
+      amount: 100.00,
+      recipient: 'Jane Smith',
+      date: DateTime.now().subtract(Duration(hours: 5)),
+    ),
+    // Ajoutez d'autres transactions...
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Wave Services'),
-        backgroundColor: Colors.blueAccent,
+        title: Text('Wave Services', 
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Colors.blue[600],
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(FontAwesomeIcons.gear),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsPage()),
+            ),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Scan the QR code to access Wave services',
-              style: TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
-              ),
+      body: Column(
+        children: [
+          // En-tête avec QR et solde
+          Container(
+            color: Colors.blue[600],
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    children: [
+                      // QR Code
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: QrImageView(
+                          data: _qrCodeData,
+                          version: QrVersions.auto,
+                          size: 100.0,
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      // Solde
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Solde disponible',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              '120.50 €',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16.0),
-            // Center(
-            //   child: QrImage(
-            //     data: _qrCodeData,
-            //     version: QrVersions.auto,
-            //     size: 200.0,
-            //   ),
-            // ),
-            const SizedBox(height: 32.0),
-            const Text(
-              'Available Wave Services',
-              style: TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 3,
-                crossAxisSpacing: 16.0,
-                mainAxisSpacing: 16.0,
-                children: [
-                  _ServiceCard(
-                    icon: FontAwesomeIcons.dollarSign,
-                    title: 'Send Money',
-                    onTap: () {
-                      Navigator.push(
+          ),
+          
+          // Services Grid
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Services',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 16),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  children: [
+                    _ServiceCard(
+                      icon: FontAwesomeIcons.paperPlane,
+                      title: 'Envoyer',
+                      onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => TransferPage()),
-                      );
-                    },
+                      ),
+                    ),
+                    _ServiceCard(
+                      icon: FontAwesomeIcons.moneyBillTransfer,
+                      title: 'Retirer',
+                      onTap: () {},
+                    ),
+                    _ServiceCard(
+                      icon: FontAwesomeIcons.mobileScreen,
+                      title: 'Crédit',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Transactions List
+          Expanded(
+            child: Container(
+              margin: EdgeInsets.only(top: 24),
+              padding: EdgeInsets.only(top: 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Transactions récentes',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ),
-                  _ServiceCard(
-                    icon: FontAwesomeIcons.arrowsAltV,
-                    title: 'Withdraw',
-                    onTap: () {
-                      _launchUrl('https://wavemobilemoney.com/withdraw');
-                    },
-                  ),
-                  _ServiceCard(
-                    icon: FontAwesomeIcons.moneyBillAlt,
-                    title: 'Buy Airtime',
-                    onTap: () {
-                      _launchUrl('https://wavemobilemoney.com/buy-airtime');
-                    },
+                  Expanded(
+                    child: ListView.builder(
+                      padding: EdgeInsets.all(16),
+                      itemCount: _transactions.length,
+                      itemBuilder: (context, index) {
+                        final transaction = _transactions[index];
+                        return _TransactionCard(transaction: transaction);
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -109,32 +213,144 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: const BoxDecoration(
-              color: Colors.blueAccent,
-              shape: BoxShape.circle,
-            ),
-            child: FaIcon(
-              icon,
-              color: Colors.white,
-              size: 32.0,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-          const SizedBox(height: 8.0),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14.0,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: FaIcon(
+                  icon,
+                  color: Colors.blue[600],
+                  size: 24,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class Transaction {
+  final String type;
+  final double amount;
+  final String recipient;
+  final DateTime date;
+
+  Transaction({
+    required this.type,
+    required this.amount,
+    required this.recipient,
+    required this.date,
+  });
+}
+
+class _TransactionCard extends StatelessWidget {
+  final Transaction transaction;
+
+  const _TransactionCard({required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: transaction.amount > 0 
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                transaction.amount > 0 
+                    ? FontAwesomeIcons.arrowDown
+                    : FontAwesomeIcons.arrowUp,
+                color: transaction.amount > 0 ? Colors.green : Colors.red,
+                size: 16,
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    transaction.type,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    transaction.recipient,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${transaction.amount.isNegative ? "" : "+"}${transaction.amount.toStringAsFixed(2)} €',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: transaction.amount > 0 ? Colors.green : Colors.red,
+                  ),
+                ),
+                Text(
+                  '${transaction.date.hour}:${transaction.date.minute.toString().padLeft(2, "0")}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

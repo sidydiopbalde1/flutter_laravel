@@ -24,11 +24,12 @@ dependencies:
   glassmorphism: ^3.0.0
   animate_do: ^2.0.0
   http: ^1.2.2
-  provider: ^6.0.3
   qr_flutter: ^4.0.0
   logger: ^1.1.0
   flutter_contacts: ^1.1.7+1   
   permission_handler: ^10.2.0 # Nécessaire pour gérer les permissions
+  provider: ^6.0.5
+
   
 dev_dependencies:
   flutter_test:
