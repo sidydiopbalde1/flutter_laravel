@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import '../services/api_service.dart';  // Assurez-vous que ApiService est importé ici
+import '../services/transaction_service.dart'; // Utilisation du service TransactionService
 
 class TransferPage extends StatefulWidget {
   @override
@@ -10,13 +10,13 @@ class TransferPage extends StatefulWidget {
 
 class _TransferPageState extends State<TransferPage> {
   List<Contact> _contacts = [];
-  List<Contact> _filteredContacts = []; // Pour la recherche
-  List<int> _selectedReceiverIds = [];
+  List<Contact> _filteredContacts = [];
+  List<String> _selectedReceiverPhones = [];
   final _amountController = TextEditingController();
-  final _searchController = TextEditingController(); // Contrôleur pour la recherche
+  final _searchController = TextEditingController();
   bool _isLoading = false;
 
-  final ApiService _apiService = ApiService(); // Instance du service API
+  final TransactionService _transactionService = TransactionService(); // Utilisation de TransactionService
 
   @override
   void initState() {
@@ -32,7 +32,6 @@ class _TransferPageState extends State<TransferPage> {
     super.dispose();
   }
 
-  // Fonction pour filtrer les contacts
   void _filterContacts() {
     final query = _searchController.text.toLowerCase();
     setState(() {
@@ -41,100 +40,124 @@ class _TransferPageState extends State<TransferPage> {
       } else {
         _filteredContacts = _contacts.where((contact) {
           final name = contact.displayName.toLowerCase();
-          return name.contains(query);
+          final phone = _getPhoneNumber(contact)?.toLowerCase() ?? '';
+          return name.contains(query) || phone.contains(query);
         }).toList();
       }
     });
   }
 
   Future<void> _fetchContacts() async {
-    bool hasPermission = await FlutterContacts.requestPermission();
+    setState(() => _isLoading = true);
 
-    if (hasPermission) {
-      List<Contact> contacts = await FlutterContacts.getContacts(withThumbnail: false);
-      setState(() {
-        _contacts = contacts;
-        _filteredContacts = List.from(contacts); // Initialiser la liste filtrée
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Permission refusée pour accéder aux contacts."),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    try {
+      bool hasPermission = await FlutterContacts.requestPermission();
+
+      if (hasPermission) {
+        List<Contact> contacts = await FlutterContacts.getContacts(
+          withProperties: true,
+          withThumbnail: false,
+        );
+
+        contacts.sort((a, b) => a.displayName.compareTo(b.displayName));
+
+        setState(() {
+          _contacts = contacts;
+          _filteredContacts = List.from(contacts);
+          _isLoading = false;
+        });
+      } else {
+        _showErrorSnackBar("Permission refusée pour accéder aux contacts.");
+      }
+    } catch (e) {
+      _showErrorSnackBar("Erreur lors de la récupération des contacts: $e");
+      setState(() => _isLoading = false);
     }
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  String? _getPhoneNumber(Contact contact) {
+    if (contact.phones.isNotEmpty) {
+      return contact.phones.first.number.replaceAll(RegExp(r'[^\d]'), '');
+    }
+    return null;
+  }
+
+  void _toggleSelection(String phoneNumber) {
+    setState(() {
+      if (_selectedReceiverPhones.contains(phoneNumber)) {
+        _selectedReceiverPhones.remove(phoneNumber);
+        print('Désélectionné: $phoneNumber');
+      } else {
+        _selectedReceiverPhones.add(phoneNumber);
+        print('Sélectionné: $phoneNumber');
+      }
+    });
+  }
+
   Future<void> _performTransfer() async {
-    if (_amountController.text.isEmpty || _selectedReceiverIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Veuillez remplir tous les champs requis"),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (_amountController.text.isEmpty) {
+      _showErrorSnackBar("Veuillez entrer un montant");
       return;
     }
 
-    // Récupérer l'ID du destinataire à partir des contacts sélectionnés
-    final receiverId = _contacts[_selectedReceiverIds.first].id; // Supposons que le premier contact sélectionné est le destinataire
+    if (_selectedReceiverPhones.isEmpty) {
+      _showErrorSnackBar("Veuillez sélectionner au moins un destinataire");
+      return;
+    }
 
-    // Préparer les données du transfert
-    final transferData = {
-      'sender_id': 18, // Remplacez par l'ID de l'utilisateur actuel
-      'receiver_id': receiverId,
-      'montant': int.parse(_amountController.text),
-    };
+    final amount = int.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      _showErrorSnackBar("Veuillez entrer un montant valide");
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      // Effectuer la requête POST
-      final response = await _apiService.post('api/transaction/transfert/multiple', transferData);
+      // Appeler la méthode transferMoney du service TransactionService
+      final response = await _transactionService.transferMoney(
+        _selectedReceiverPhones,
+        amount.toDouble(),
+      );
 
-      setState(() => _isLoading = false);
-
-      if (response['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Transfert réussi !"),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
+      if (response['success'] == true) {
+        _showSuccessSnackBar("Transfert réussi !");
+        setState(() {
+          _selectedReceiverPhones.clear();
+          _amountController.clear();
+        });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Échec du transfert."),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showErrorSnackBar(response['message'] ?? "Échec du transfert");
       }
     } catch (e) {
+      _showErrorSnackBar("Erreur lors du transfert : $e");
+    } finally {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Erreur lors du transfert : $e"),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     }
-
-    _amountController.clear();
-    _selectedReceiverIds.clear();
   }
 
-  // Widget de barre de recherche
   Widget _buildSearchBar() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -152,7 +175,7 @@ class _TransferPageState extends State<TransferPage> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: "Rechercher un contact...",
+          hintText: "Rechercher par nom ou numéro...",
           prefixIcon: Icon(Icons.search, color: Colors.grey),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -170,7 +193,76 @@ class _TransferPageState extends State<TransferPage> {
     );
   }
 
+  Widget _buildAmountInput() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Montant à transférer",
+            style: TextStyle(
+              fontSize: 18.0,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 12),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(fontSize: 16),
+            decoration: InputDecoration(
+              hintText: "Entrez le montant",
+              prefixIcon: Icon(Icons.monetization_on),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContactList() {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (_contacts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.contact_phone, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Aucun contact disponible",
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _fetchContacts,
+              child: Text("Actualiser"),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_filteredContacts.isEmpty && _searchController.text.isNotEmpty) {
       return Center(
         child: Column(
@@ -180,10 +272,7 @@ class _TransferPageState extends State<TransferPage> {
             SizedBox(height: 16),
             Text(
               "Aucun contact trouvé",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -194,43 +283,35 @@ class _TransferPageState extends State<TransferPage> {
       itemCount: _filteredContacts.length,
       itemBuilder: (context, index) {
         final contact = _filteredContacts[index];
+        final phoneNumber = _getPhoneNumber(contact);
+        if (phoneNumber == null) return Container();
+
         final contactName = contact.displayName;
-        final isSelected = _selectedReceiverIds.contains(index);
+        final isSelected = _selectedReceiverPhones.contains(phoneNumber);
         final initials = contactName.isNotEmpty ? contactName[0].toUpperCase() : "?";
 
         return Card(
           elevation: 2,
           margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isSelected ? Colors.blue : Colors.transparent,
+              width: 1,
+            ),
+          ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
-              child: Text(
-                initials,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text(initials),
+              backgroundColor: Colors.blue,
             ),
-            title: Text(
-              contactName,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            trailing: Icon(
-              isSelected ? Icons.check_circle : Icons.check_circle_outline,
-              color: isSelected ? Colors.blue : Colors.grey,
-              size: 28,
-            ),
+            title: Text(contactName),
+            subtitle: Text(phoneNumber),
+            trailing: isSelected
+                ? Icon(Icons.check_circle, color: Colors.blue)
+                : Icon(Icons.check_circle_outline, color: Colors.grey),
             onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedReceiverIds.remove(index);
-                } else {
-                  _selectedReceiverIds.add(index);
-                }
-              });
+              _toggleSelection(phoneNumber);
             },
           ),
         );
@@ -241,84 +322,22 @@ class _TransferPageState extends State<TransferPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        elevation: 0,
-        title: Text(
-          "Transfert d'argent",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.blue,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(FontAwesomeIcons.wallet),
-          ),
-        ],
+        title: Text('Transfert d\'argent'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Montant à transférer",
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: "Entrez le montant",
-                      prefixIcon: Icon(Icons.monetization_on),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
             _buildSearchBar(),
             SizedBox(height: 16),
-            Expanded(
-              child: _buildContactList(),
+            _buildAmountInput(),
+            SizedBox(height: 16),
+            Expanded(child: _buildContactList()),
+            ElevatedButton(
+              onPressed: _performTransfer,
+              child: Text('Effectuer le transfert'),
             ),
-            if (_isLoading)
-              Center(child: CircularProgressIndicator())
-            else
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: ElevatedButton(
-                  onPressed: _performTransfer,
-                  style: ElevatedButton.styleFrom(
-                    // primary: Colors.blue,
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text("Effectuer le transfert", style: TextStyle(fontSize: 18)),
-                ),
-              ),
           ],
         ),
       ),

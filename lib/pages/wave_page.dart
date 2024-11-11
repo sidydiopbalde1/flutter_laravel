@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'transfert_page.dart';
 import 'settings_page.dart';
+import '../services/transaction_service.dart';
+import '../models/transaction.dart';
 
 class WaveServices extends StatefulWidget {
   @override
@@ -12,28 +13,28 @@ class WaveServices extends StatefulWidget {
 
 class _WaveServicesState extends State<WaveServices> {
   final String _qrCodeData = 'https://wavemobilemoney.com';
-  final List<Transaction> _transactions = [
-    Transaction(
-      type: 'Envoi',
-      amount: -50.00,
-      recipient: 'John Doe',
-      date: DateTime.now().subtract(Duration(hours: 2)),
-    ),
-    Transaction(
-      type: 'Réception',
-      amount: 100.00,
-      recipient: 'Jane Smith',
-      date: DateTime.now().subtract(Duration(hours: 5)),
-    ),
-    // Ajoutez d'autres transactions...
-  ];
+  final TransactionService _transactionService = TransactionService();
+  
+  // Initialisation sécurisée de _transactionsFuture avec une valeur par défaut vide
+  Future<List<Transaction>> _transactionsFuture = Future.value([]);
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionsFuture = _transactionService.getTransferHistory().catchError((e) {
+      // En cas d'erreur, nous retournons une liste vide pour éviter l'exception
+      print("Erreur lors de la récupération des transactions : $e");
+      return []; // Retourner une liste vide en cas d'erreur
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Wave Services', 
+        title: Text(
+          'Wave Services',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.blue[600],
@@ -110,7 +111,7 @@ class _WaveServicesState extends State<WaveServices> {
               ],
             ),
           ),
-          
+
           // Services Grid
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -156,7 +157,7 @@ class _WaveServicesState extends State<WaveServices> {
               ],
             ),
           ),
-          
+
           // Transactions List
           Expanded(
             child: Container(
@@ -181,12 +182,25 @@ class _WaveServicesState extends State<WaveServices> {
                     ),
                   ),
                   Expanded(
-                    child: ListView.builder(
-                      padding: EdgeInsets.all(16),
-                      itemCount: _transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = _transactions[index];
-                        return _TransactionCard(transaction: transaction);
+                    child: FutureBuilder<List<Transaction>>(
+                      future: _transactionsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Erreur de chargement des transactions'));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Center(child: Text('Aucune transaction disponible'));
+                        } else {
+                          return ListView.builder(
+                            padding: EdgeInsets.all(16),
+                            itemCount: snapshot.data!.length,
+                            itemBuilder: (context, index) {
+                              final transaction = snapshot.data![index];
+                              return _TransactionCard(transaction: transaction);
+                            },
+                          );
+                        }
                       },
                     ),
                   ),
@@ -263,20 +277,6 @@ class _ServiceCard extends StatelessWidget {
   }
 }
 
-class Transaction {
-  final String type;
-  final double amount;
-  final String recipient;
-  final DateTime date;
-
-  Transaction({
-    required this.type,
-    required this.amount,
-    required this.recipient,
-    required this.date,
-  });
-}
-
 class _TransactionCard extends StatelessWidget {
   final Transaction transaction;
 
@@ -294,16 +294,16 @@ class _TransactionCard extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: transaction.amount > 0 
+                color: transaction.montant > 0
                     ? Colors.green.withOpacity(0.1)
                     : Colors.red.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                transaction.amount > 0 
+                transaction.montant > 0
                     ? FontAwesomeIcons.arrowDown
                     : FontAwesomeIcons.arrowUp,
-                color: transaction.amount > 0 ? Colors.green : Colors.red,
+                color: transaction.montant > 0 ? Colors.green : Colors.red,
                 size: 16,
               ),
             ),
@@ -319,13 +319,6 @@ class _TransactionCard extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  Text(
-                    transaction.recipient,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -333,18 +326,18 @@ class _TransactionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${transaction.amount.isNegative ? "" : "+"}${transaction.amount.toStringAsFixed(2)} €',
+                  '${transaction.montant.isNegative ? "" : "+"}${transaction.montant.toStringAsFixed(2)} €',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
-                    color: transaction.amount > 0 ? Colors.green : Colors.red,
+                    color: transaction.montant > 0 ? Colors.green : Colors.red,
                   ),
                 ),
                 Text(
-                  '${transaction.date.hour}:${transaction.date.minute.toString().padLeft(2, "0")}',
+                  '${transaction.date}',
                   style: TextStyle(
                     color: Colors.grey[600],
-                    fontSize: 14,
+                    fontSize: 12,
                   ),
                 ),
               ],

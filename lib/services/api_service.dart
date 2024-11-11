@@ -5,6 +5,12 @@ import 'package:logger/logger.dart';
 class ApiService {
   final String _baseUrl = 'http://192.168.6.216:8000'; // Remplacez cette URL par celle de votre backend
   final Logger _logger = Logger();
+  String? _token; // Le token est stocké ici
+
+  // Setter pour le token
+  void setToken(String token) {
+    _token = token;
+  }
 
   // Méthode pour effectuer une requête POST
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
@@ -12,7 +18,10 @@ class ApiService {
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token' // Ajout du token dans les en-têtes
+        },
         body: jsonEncode(data),
       );
 
@@ -36,7 +45,10 @@ class ApiService {
     try {
       final response = await http.get(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token' // Ajout du token dans les en-têtes
+        },
       );
 
       if (response.statusCode == 200) {
@@ -45,7 +57,6 @@ class ApiService {
       } else {
         _logger.e("Échec de la requête GET sur l'endpoint: $endpoint");
         _logger.e("Code de statut: ${response.statusCode}");
-        // _logger.e("Corps de la réponse: ${response.body}");
         throw Exception('Erreur de requête GET');
       }
     } catch (e) {
@@ -54,28 +65,13 @@ class ApiService {
     }
   }
 
-
-  //  Future<List<User>> getUsers() async {
-  //   final response = await http.get(Uri.parse(baseUrl + 'users')); // Assurez-vous que l'endpoint 'users' est correct
-
-  //   if (response.statusCode == 200) {
-  //     List jsonResponse = json.decode(response.body);
-  //     return jsonResponse.map((user) => User.fromJson(user)).toList();
-  //   } else {
-  //     throw Exception('Échec du chargement des utilisateurs');
-  //   }
-  // }
-
-   // Méthode pour effectuer un transfert
-  // Future<Map<String, dynamic>> transferMoney(int senderId, int receiverId, double montant) async {
-  //   // Paramètres à envoyer dans le corps de la requête
-  //   final data = {
-  //     "sender_id": senderId,
-  //     "receiver_id": receiverId,
-  //     "montant": montant,
-  //   };
-
-  //   // Appel de la méthode POST avec l'endpoint 'api/transaction/transfert/simple'
-  //   return await post('api/transaction/transfert/simple', data);
-  // }
+  // Exemple de méthode pour un transfert
+  Future<Map<String, dynamic>> transferMoney(int senderId, int receiverId, double montant) async {
+    final data = {
+      "sender_id": senderId,
+      "receiver_id": receiverId,
+      "montant": montant,
+    };
+    return await post('api/transaction/transfert/simple', data);
+  }
 }
