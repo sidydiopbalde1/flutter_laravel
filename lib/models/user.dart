@@ -8,6 +8,7 @@ class User {
   final String telephone;
   final String solde;
   final String photo;
+    final String codeSecret;
   final String? plafond;
   final int roleId;
   final String createdAt;
@@ -21,6 +22,7 @@ class User {
     required this.telephone,
     required this.solde,
     required this.photo,
+    required this.codeSecret,  // Ajouté pour la gestion des codes secrets
     this.plafond,
     required this.roleId,
     required this.createdAt,
@@ -41,6 +43,25 @@ class User {
       roleId: json['role_id'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
+      codeSecret: json['code_secret'],  // Ajouté pour la gestion des codes secrets
     );
+  }
+
+
+    Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nom': nom,
+      'prenom': prenom,
+      'email': email,
+      'code_secret': codeSecret,
+      'telephone': telephone,
+      'solde': solde,
+      'photo': photo,
+      'plafond': plafond,
+      'role_id': roleId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
   }
 }

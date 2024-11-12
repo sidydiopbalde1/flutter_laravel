@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'package:logger/logger.dart';
 import 'dart:convert';
+import '../exceptions/auth_exception.dart';
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   bool _isAuthenticated = false;
@@ -29,43 +30,68 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Méthode d'inscription
-  Future<void> register({
+Future<void> register({
     required String nom,
     required String prenom,
     required String telephone,
     required String email,
     required String password,
     // String? photoUrl,
-  }) async {
-    try {
-      final response = await _authService.register(
-        nom: nom,
-        prenom: prenom,
-        telephone: telephone,
-        email: email,
-        password: password,
-        // photoUrl: photoUrl,
-      );
+}) async {
+  try {
+    // Log des données envoyées
+    _logger.d("Tentative d'inscription avec les données : ${json.encode({
+      'nom': nom,
+      'prenom': prenom,
+      'telephone': telephone,
+      'email': email,
+      'password': password,
+      // 'photoUrl': photoUrl,
+    })}");
 
-      _token = response['user'];
-      _message= response['message'];
-      _isAuthenticated = true;
-      _logger.d(' $_message');
-      _logger.d('Inscription réussie, token : $_token');
-      notifyListeners();
-    } catch (e) {
-       _logger.d("Données envoyées : ${json.encode({
-        'nom': nom,
-        'prenom': prenom,
-        'telephone': telephone,
-        'email': email,
-        'password': password,
-        // 'photo': photoUrl,
-      })}");
-      _logger.e('Erreur lors de l\'inscription : $e');
-      throw Exception('Erreur lors de l\'inscription : $e');
-    }
+    // Préparer les données à envoyer à l'API
+    final data = {
+      'nom': nom,
+      'prenom': prenom,
+      'telephone': telephone,
+      'email': email,
+      'password': password,
+      // 'photoUrl': photoUrl,
+    };
+
+    // Appel à l'API pour effectuer l'inscription
+    final response = await _authService.register(
+      nom: nom,
+      prenom: prenom,
+      telephone: telephone,
+      email: email,
+      password: password,
+      // photoUrl: photoUrl,
+    );
+
+    // Log de la réponse de l'API
+    _logger.d("Réponse API : ${response.toString()}");
+
+    // Vérification si l'inscription a été réussie
+    // if (response['success'] == true) {
+    //   // Inscription réussie
+    //   _token = response['data']; // Assumer que la réponse contient un token ou des données utilisateur
+    //   _message = response['message']; // Message de succès ou erreur
+    //   _isAuthenticated = true;
+    //   _logger.d('Inscription réussie, token : $_token');
+    //   notifyListeners();
+    // } else {
+    //   // Si l'inscription échoue
+    //   _logger.e("Erreur d'inscription : ${response['message'] ?? 'Erreur inconnue'}");
+    //   throw AuthException("Erreur d'inscription : ${response['message'] ?? 'Erreur inconnue'}");
+    // }
+  } catch (e) {
+    // Gestion des erreurs
+    _logger.e('Erreur lors de l\'inscription : $e');
+    rethrow;
   }
+}
+
 
   // Méthode de déconnexion
   void logout() {

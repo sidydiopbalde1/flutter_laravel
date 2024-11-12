@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../exceptions/auth_exception.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();
@@ -39,43 +40,55 @@ class AuthService {
     }
   }
 
-  // Méthode d'inscription
-  Future<Map<String, dynamic>> register({
-    required String nom,
-    required String prenom,
-    required String telephone,
-    required String email,
-    required String password,
-    String? photoUrl,
-  }) async {
+Future<Map<String, dynamic>> register({
+  required String nom,
+  required String prenom, 
+  required String telephone,
+  required String email,
+  required String password,
+}) async {
+  try {
     _logger.d("Tentative d'inscription pour l'email : $email");
 
-    try {
-      final response = await _apiService.post(
-        'api/user',
-        {
-          'nom': nom,
-          'prenom': prenom,
-          'telephone': telephone,
-          'email': email,
-          'password': password,
-        },
-      );
+    // Préparer les données à envoyer
+    final data = {
+      'nom': nom,
+      'prenom': prenom,
+      'telephone': telephone,
+      'email': email,
+      'password': password,
+    };
 
-      _logger.i("Inscription réussie pour l'email : $email");
-      _logger.d("Données envoyées : ${json.encode({
-        'nom': nom,
-        'prenom': prenom,
-        'telephone': telephone,
-        'email': email,
-        'password': password,
-      })}");
-      return response;
-    } catch (e) {
-      _logger.e("Erreur lors de l'inscription : $e");
-      throw Exception('Erreur d\'inscription au serveur : $e');
+    // Envoyer la requête d'inscription à l'API
+    final response = await _apiService.post('api/user', data);
+
+    // Vérification de la réponse de l'API
+    _logger.d("Réponse reçue : ${response.toString()}");  // Log de la réponse brute
+
+    // Vérification de la présence des clés nécessaires dans la réponse
+    if (response != null && response['success'] == true) {
+      if (response['data'] != null) {
+        // Inscription réussie, récupération des données de l'utilisateur
+        _logger.i("Inscription réussie pour l'utilisateur ID : ${response['data']['id']}, email : $email");
+        return response['data']; // Retourner les données de l'utilisateur
+      } else {
+        final message = response['message'] ?? 'Aucune donnée utilisateur renvoyée';
+        _logger.e("Erreur d'inscription : $message");
+        throw AuthException("Erreur d'inscription : $message");
+      }
+    } else {
+      final message = response['message'] ?? 'Erreur inconnue';
+      _logger.e("Inscription échouée : $message");
+      throw AuthException("Erreur d'inscription : $message");
     }
+  } catch (e) {
+    _logger.e("Erreur lors de l'inscription : $e");
+    rethrow;
   }
+}
+
+
+
 
   // Méthode pour stocker le token dans SharedPreferences
   Future<void> _storeToken(String token) async {

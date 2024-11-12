@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart';
+import 'register_widgets.dart'; // Import des widgets extraits
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -13,14 +13,13 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  bool _isPasswordVisible = false;
 
   final _nomController = TextEditingController();
   final _prenomController = TextEditingController();
   final _telephoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  // String? _photoUrl;
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -30,6 +29,12 @@ class _SignUpPageState extends State<SignUpPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isPasswordVisible = !_isPasswordVisible;
+    });
   }
 
   @override
@@ -65,27 +70,26 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildTextField(_nomController, 'Nom', Icons.person),
+                  // Utilisation des widgets extraits
+                  buildTextField(_nomController, 'Nom', Icons.person),
                   const SizedBox(height: 20),
-                  _buildTextField(_prenomController, 'Prénom', Icons.person),
+                  buildTextField(_prenomController, 'Prénom', Icons.person),
                   const SizedBox(height: 20),
-                  _buildTextField(
+                  buildTextField(
                     _telephoneController,
                     'Téléphone',
                     Icons.phone,
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 20),
-                  _buildTextField(
+                  buildTextField(
                     _emailController,
                     'Email',
                     Icons.email,
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 20),
-                  _buildPasswordField(),
-                  const SizedBox(height: 20),
-                  // _buildPhotoPicker(),
+                  buildPasswordField(_passwordController, _isPasswordVisible, _togglePasswordVisibility),
                   const SizedBox(height: 40),
                   FadeInUp(
                     delay: const Duration(milliseconds: 1000),
@@ -104,14 +108,13 @@ class _SignUpPageState extends State<SignUpPage> {
                             try {
                               await Provider.of<AuthProvider>(context, listen: false)
                                   .register(
-                                    nom : nom,
-                                    prenom :prenom,
-                                    telephone :telephone,
-                                    email :email,
-                                    password :password,
-                                    // photoUrl : _photoUrl,
+                                    nom: nom,
+                                    prenom: prenom,
+                                    telephone: telephone,
+                                    email: email,
+                                    password: password,
                                   );
-                              Navigator.pushReplacementNamed(context, '/wave_services');
+                              Navigator.pushReplacementNamed(context, '/login');
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Erreur : ${e.toString()}')),
@@ -146,110 +149,4 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     );
   }
-
-  Widget _buildTextField(
-      TextEditingController controller, String label, IconData icon,
-      {TextInputType keyboardType = TextInputType.text}) {
-    return FadeInDown(
-      delay: const Duration(milliseconds: 400),
-      duration: const Duration(milliseconds: 1500),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Veuillez entrer $label';
-          }
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return FadeInDown(
-      delay: const Duration(milliseconds: 600),
-      duration: const Duration(milliseconds: 1500),
-      child: TextFormField(
-        controller: _passwordController,
-        obscureText: !_isPasswordVisible,
-        decoration: InputDecoration(
-          labelText: 'Mot de passe',
-          prefixIcon: const Icon(Icons.lock_outline),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-            ),
-            onPressed: () {
-              setState(() {
-                _isPasswordVisible = !_isPasswordVisible;
-              });
-            },
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Veuillez entrer votre mot de passe';
-          }
-          return null;
-        },
-      ),
-    );
-  }
-
-  // Widget _buildPhotoPicker() {
-  //   return FadeInDown(
-  //     delay: const Duration(milliseconds: 800),
-  //     duration: const Duration(milliseconds: 1500),
-  //     child: InkWell(
-  //       onTap: () {
-  //         // Implémentez la sélection d'image ici
-  //       },
-  //       child: Row(
-  //         children: [
-  //           CircleAvatar(
-  //             radius: 30,
-  //             backgroundImage: _photoUrl != null ? NetworkImage(_photoUrl!) : null,
-  //             child: _photoUrl == null ? Icon(Icons.add_a_photo) : null,
-  //           ),
-  //           const SizedBox(width: 16),
-  //           const Text(
-  //             'Ajouter une photo de profil',
-  //             style: TextStyle(color: Colors.grey),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 }

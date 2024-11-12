@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import '../services/transaction_service.dart'; // Utilisation du service TransactionService
+import '../../services/transaction_service.dart'; // Utilisation du service TransactionService
 
 class TransferPage extends StatefulWidget {
   @override
