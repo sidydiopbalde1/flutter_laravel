@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'services_card_widgets.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import '../transfert/transfert_page.dart';
+import '../transfert_planified/transfert_planified_page.dart';
+import 'services_card_widgets.dart';  // Assurez-vous d'importer le bon fichier contenant ServiceCard
 
 class ServicesSection extends StatelessWidget {
   @override
@@ -21,26 +23,34 @@ class ServicesSection extends StatelessWidget {
           SizedBox(height: 16),
           GridView.count(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: NeverScrollableScrollPhysics(),  // Ne permet pas de défiler le GridView
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             children: [
               ServiceCard(
-                icon: Icons.send,
+                icon: Icons.send,  // Icône d'envoi
                 title: 'Envoyer',
-                 onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => TransferPage()),
-                      ),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TransferPage()),  // Navigation vers la page de transfert
+                ),
               ),
               ServiceCard(
-                icon: Icons.money,
+                icon: Icons.schedule,  // Icône de planification
+                title: 'Planifier Transfert',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TransfertPlanified()),  // Navigue vers la même page pour planifier
+                ),
+              ),
+              ServiceCard(
+                icon: Icons.money,  // Icône de retrait
                 title: 'Retirer',
                 onTap: () {},
               ),
               ServiceCard(
-                icon: Icons.credit_card,
+                icon: Icons.credit_card,  // Icône de crédit
                 title: 'Crédit',
                 onTap: () {},
               ),

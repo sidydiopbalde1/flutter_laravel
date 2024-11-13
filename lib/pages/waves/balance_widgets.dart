@@ -16,7 +16,7 @@ class BalanceSection extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            '120.50 €',
+            '120.50 F',
             style: TextStyle(
               color: Colors.white,
               fontSize: 32,

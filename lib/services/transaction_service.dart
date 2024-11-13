@@ -7,7 +7,7 @@ class TransactionService {
   final ApiService _apiService = ApiService();
   final Logger _logger = Logger();
 
-  // Méthode pour récupérer le token depuis SharedPreferences
+  // Méthode pour récupérer le token depuis Hive
   Future<void> _setToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');

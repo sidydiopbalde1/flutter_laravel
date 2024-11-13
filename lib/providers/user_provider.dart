@@ -1,38 +1,33 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
-import '../services/api_service.dart';
-import '../services/auth_service.dart';
+import '../services/user_service.dart';
 
 class UserProvider with ChangeNotifier {
-  final ApiService _apiService = ApiService();
-  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
   User? _user;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   User? get user => _user;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
+  double? get solde => _user?.solde;
+
+  // Méthode pour récupérer les données utilisateur
   Future<void> fetchUserData() async {
-    const url = 'api/connected-users';
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
     try {
-      // Get token from AuthService
-      String? token = await _authService.getToken();
-
-      if (token == null) {
-        throw Exception('User is not authenticated');
-      }
-
-      // Call the `get` method of `ApiService` with the token
-      final responseData = await _apiService.get(url);
-
-      // Since `responseData` is a Map, directly use it to check for success
-      if (responseData['success']) {
-        _user = User.fromJson(responseData['data']);
-        notifyListeners();  // Notify widgets that user data is loaded
-      } else {
-        throw Exception('Failed to load user data');
-      }
+      _user = await _userService.fetchUserData();
+      
     } catch (error) {
-      rethrow;
+      _errorMessage = error.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

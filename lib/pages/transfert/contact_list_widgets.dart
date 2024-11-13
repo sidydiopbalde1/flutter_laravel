@@ -25,33 +25,34 @@ class ContactList extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return Center(child: CircularProgressIndicator());
-    }
+Widget build(BuildContext context) {
+  if (isLoading) {
+    return Center(child: CircularProgressIndicator());
+  }
 
-    if (filteredContacts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.contact_phone, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              "Aucun contact disponible",
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-            ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => fetchContacts(),
-              child: Text("Actualiser"),
-            ),
-          ],
-        ),
-      );
-    }
+  if (filteredContacts.isEmpty) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.contact_phone, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "Aucun contact disponible",
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          ),
+          SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => fetchContacts(),
+            child: Text("Actualiser"),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return ListView.builder(
+  return Expanded( // Ajout de Expanded ici
+    child: ListView.builder(
       itemCount: filteredContacts.length,
       itemBuilder: (context, index) {
         final contact = filteredContacts[index];
@@ -86,6 +87,8 @@ class ContactList extends StatelessWidget {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
+
 }

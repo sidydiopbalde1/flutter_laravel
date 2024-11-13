@@ -19,7 +19,7 @@ class HeaderSection extends StatelessWidget {
               children: [
                 QRCodeSection(qrCodeData: qrCodeData),
                 SizedBox(width: 20),
-                BalanceSection(),
+                BalanceSection(), //widgets pour afficher la balance
               ],
             ),
           ),

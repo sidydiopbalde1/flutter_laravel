@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 import '../exceptions/auth_exception.dart';
+import 'package:hive/hive.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();
@@ -91,14 +92,32 @@ Future<Map<String, dynamic>> register({
 
 
   // Méthode pour stocker le token dans SharedPreferences
+  // Future<void> _storeToken(String token) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('auth_token', token);
+  // }
+
+  // // Méthode pour récupérer le token stocké
+  // Future<String?> getToken() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   return prefs.getString('auth_token');
+  // }
+
+    // Méthode pour stocker le token dans Hive
   Future<void> _storeToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    var box = Hive.box('authBox'); // Ouvre la boîte 'authBox'
+    await box.put('auth_token', token); // Stocke le token sous la clé 'auth_token'
   }
 
   // Méthode pour récupérer le token stocké
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    var box = Hive.box('authBox');
+    return box.get('auth_token'); // Récupère le token stocké
+  }
+
+    // Méthode pour supprimer le token (par exemple, lors de la déconnexion)
+  Future<void> removeToken() async {
+    var box = Hive.box('authBox');
+    await box.delete('auth_token');
   }
 }

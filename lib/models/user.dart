@@ -6,7 +6,7 @@ class User {
   final String prenom;
   final String email;
   final String telephone;
-  final String solde;
+  final double solde;
   final String photo;
     final String codeSecret;
   final String? plafond;
